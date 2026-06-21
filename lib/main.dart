@@ -42,7 +42,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
-  final List<String> _history = [];
+  List<String> _history = [];
 
   @override
   void initState() {
@@ -793,7 +793,7 @@ class _GraphingCalculatorState extends State<GraphingCalculator> {
 
     try {
       for (double x = -10; x <= 10; x += 0.2) {
-        cm.bindVariable(Name('x'), Number(x));
+        cm.bindVariable(Variable('x'), Number(x));
         final exp = parser.parse(_controller.text
           .replaceAll('sin', 'sin').replaceAll('cos', 'cos').replaceAll('tan', 'tan')
           .replaceAll('π', '3.14159').replaceAll('sqrt', 'sqrt'));
