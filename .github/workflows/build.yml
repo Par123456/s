@@ -24,7 +24,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      # 🔧 رفع ارور Exit Code 1 با نصب Java 17
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
@@ -37,6 +36,10 @@ jobs:
           channel: 'stable'
           cache: true
       
+      # 🪄 تولید خودکار پوشه اندروید که در گیت‌هاب جا مانده است
+      - name: Generate Android Folder
+        run: flutter create --platforms=android .
+        
       - run: flutter pub get
       - run: flutter build apk --release
       
@@ -53,7 +56,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      # 🔧 نصب جاوا برای ویندوز (برخی پلاگین‌ها به آن نیاز دارند)
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
@@ -65,9 +67,12 @@ jobs:
         with:
           channel: 'stable'
           cache: true
-      
-      # 🔧 فعال‌سازی اجباری پشتیبانی از دسکتاپ ویندوز
-      - name: Enable Windows Desktop Support
+          
+      # 🪄 تولید خودکار پوشه ویندوز که در گیت‌هاب جا مانده است
+      - name: Generate Windows Folder
+        run: flutter create --platforms=windows .
+        
+      - name: Enable Windows Desktop
         run: flutter config --enable-windows-desktop
         
       - run: flutter pub get
