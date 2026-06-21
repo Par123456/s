@@ -1386,8 +1386,17 @@ class _DateCalculatorState extends State<DateCalculator> {
   @override
   Widget build(BuildContext context) {
     final isRTL = widget.lang == 'fa';
-    final font = isRTL ? GoogleFonts.vazirmatn : GoogleFonts.orbitron;
-    final bodyFont = isRTL ? GoogleFonts.vazirmatn : GoogleFonts.robotoMono;
+    
+    // ایجاد یک تابع واسط برای حل مشکل Signature فونت‌ها
+    TextStyle myFont({Color? color, double? fontSize, FontWeight? fontWeight, List<Shadow>? shadows}) {
+      if (isRTL) return GoogleFonts.vazirmatn(color: color, fontSize: fontSize, fontWeight: fontWeight, shadows: shadows);
+      return GoogleFonts.orbitron(color: color, fontSize: fontSize, fontWeight: fontWeight, shadows: shadows);
+    }
+
+    TextStyle bodyFont({Color? color, double? fontSize}) {
+      if (isRTL) return GoogleFonts.vazirmatn(color: color, fontSize: fontSize);
+      return GoogleFonts.robotoMono(color: color, fontSize: fontSize);
+    }
     
     final years = (_daysDiff / 365.25).floor();
     final months = ((_daysDiff % 365.25) / 30.44).floor();
@@ -1398,12 +1407,12 @@ class _DateCalculatorState extends State<DateCalculator> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _dateCard(t('startDate'), _formatDate(_startDate), Icons.calendar_today, const Color(0xFF00D9FF), _pickStart, font),
+          _dateCard(t('startDate'), _formatDate(_startDate), Icons.calendar_today, const Color(0xFF00D9FF), _pickStart, myFont),
           const SizedBox(height: 15),
           const Icon(Icons.arrow_downward, color: Color(0xFF00FF88), size: 30)
             .animate(onPlay: (c) => c.repeat()).moveY(begin: -5, end: 5, duration: 1.seconds).then().moveY(begin: 5, end: -5, duration: 1.seconds),
           const SizedBox(height: 15),
-          _dateCard(t('endDate'), _formatDate(_endDate), Icons.event, const Color(0xFFFF00FF), _pickEnd, font),
+          _dateCard(t('endDate'), _formatDate(_endDate), Icons.event, const Color(0xFFFF00FF), _pickEnd, myFont),
           const SizedBox(height: 30),
           Container(
             padding: const EdgeInsets.all(25),
@@ -1425,7 +1434,7 @@ class _DateCalculatorState extends State<DateCalculator> {
                 const SizedBox(height: 15),
                 Text(
                   '${widget.lang == 'fa' ? _toPersianNum('$_daysDiff') : '$_daysDiff'} ${t('days')}',
-                  style: font(fontSize: 42, fontWeight: FontWeight.bold, color: Colors.white,
+                  style: myFont(fontSize: 42, fontWeight: FontWeight.bold, color: Colors.white,
                     shadows: [Shadow(color: const Color(0xFF00FF88), blurRadius: 20)]),
                 ).animate().scaleXY(begin: 1, end: 1.05, duration: 300.ms).then().scaleXY(begin: 1.05, end: 1, duration: 300.ms),
                 const SizedBox(height: 20),
@@ -1439,9 +1448,9 @@ class _DateCalculatorState extends State<DateCalculator> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _infoBox(widget.lang == 'fa' ? _toPersianNum('$years') : '$years', t('years'), const Color(0xFF00D9FF), font, bodyFont),
-                      _infoBox(widget.lang == 'fa' ? _toPersianNum('$months') : '$months', t('months'), const Color(0xFFFF00FF), font, bodyFont),
-                      _infoBox(widget.lang == 'fa' ? _toPersianNum('$days') : '$days', t('days'), const Color(0xFF00FF88), font, bodyFont),
+                      _infoBox(widget.lang == 'fa' ? _toPersianNum('$years') : '$years', t('years'), const Color(0xFF00D9FF), myFont, bodyFont),
+                      _infoBox(widget.lang == 'fa' ? _toPersianNum('$months') : '$months', t('months'), const Color(0xFFFF00FF), myFont, bodyFont),
+                      _infoBox(widget.lang == 'fa' ? _toPersianNum('$days') : '$days', t('days'), const Color(0xFF00FF88), myFont, bodyFont),
                     ],
                   ),
                 ),
@@ -1453,7 +1462,7 @@ class _DateCalculatorState extends State<DateCalculator> {
     );
   }
 
-  Widget _dateCard(String label, String date, IconData icon, Color color, VoidCallback onTap, TextStyle Function({int? fontSize, FontWeight? fontWeight, Color? color}) font) {
+  Widget _dateCard(String label, String date, IconData icon, Color color, VoidCallback onTap, TextStyle Function({Color? color, double? fontSize, FontWeight? fontWeight, List<Shadow>? shadows}) font) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
@@ -1485,12 +1494,12 @@ class _DateCalculatorState extends State<DateCalculator> {
     );
   }
 
-  Widget _infoBox(String value, String label, Color color, TextStyle Function({int? fontSize, FontWeight? fontWeight, Color? color}) font, TextStyle Function({Color? color}) bodyFont) {
+  Widget _infoBox(String value, String label, Color color, TextStyle Function({Color? color, double? fontSize, FontWeight? fontWeight, List<Shadow>? shadows}) font, TextStyle Function({Color? color, double? fontSize}) bodyFont) {
     return Column(
       children: [
         Text(value, style: font(fontSize: 24, fontWeight: FontWeight.bold, color: color)),
         const SizedBox(height: 4),
-        Text(label, style: bodyFont(color: Colors.white70).copyWith(fontSize: 11)),
+        Text(label, style: bodyFont(color: Colors.white70, fontSize: 11)),
       ],
     );
   }
