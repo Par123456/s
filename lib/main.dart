@@ -5,20 +5,120 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'dart:math' as math;
+import 'package:flutter_localizations/flutter_localizations.dart';
 
-void main() {
-  runApp(const UltimateCalculatorApp());
+void main() => runApp(const UltimateCalculatorApp());
+
+// ============ LOCALIZATION SYSTEM ============
+class AppStrings {
+  static const Map<String, Map<String, String>> _data = {
+    'en': {
+      'appTitle': 'ULTIMATE CALC',
+      'basic': 'Basic',
+      'scientific': 'Scientific',
+      'programmer': 'Programmer',
+      'graph': 'Graph',
+      'convert': 'Convert',
+      'date': 'Date',
+      'history': 'History',
+      'clearAll': 'Clear All',
+      'noHistory': 'No history yet',
+      'copied': 'Copied!',
+      'language': 'Language',
+      'enterFunction': 'Enter a function',
+      'result': 'RESULT',
+      'from': 'From',
+      'to': 'To',
+      'length': 'Length',
+      'weight': 'Weight',
+      'temperature': 'Temperature',
+      'startDate': 'Start Date',
+      'endDate': 'End Date',
+      'daysDifference': 'Days Difference',
+      'days': 'days',
+      'years': 'years',
+      'months': 'months',
+    },
+    'fa': {
+      'appTitle': 'ماشین حساب نهایی',
+      'basic': 'ساده',
+      'scientific': 'علمی',
+      'programmer': 'برنامه‌نویسی',
+      'graph': 'نمودار',
+      'convert': 'تبدیل',
+      'date': 'تاریخ',
+      'history': 'تاریخچه',
+      'clearAll': 'پاک کردن',
+      'noHistory': 'تاریخچه‌ای نیست',
+      'copied': 'کپی شد!',
+      'language': 'زبان',
+      'enterFunction': 'تابع را وارد کنید',
+      'result': 'نتیجه',
+      'from': 'از',
+      'to': 'به',
+      'length': 'طول',
+      'weight': 'وزن',
+      'temperature': 'دما',
+      'startDate': 'تاریخ شروع',
+      'endDate': 'تاریخ پایان',
+      'daysDifference': 'اختلاف روزها',
+      'days': 'روز',
+      'years': 'سال',
+      'months': 'ماه',
+    },
+  };
+
+  static String get(String key, String lang) {
+    return _data[lang]?[key] ?? _data['en']?[key] ?? key;
+  }
 }
 
-class UltimateCalculatorApp extends StatelessWidget {
+class UltimateCalculatorApp extends StatefulWidget {
   const UltimateCalculatorApp({super.key});
 
   @override
+  State<UltimateCalculatorApp> createState() => _UltimateCalculatorAppState();
+}
+
+class _UltimateCalculatorAppState extends State<UltimateCalculatorApp> {
+  String _lang = 'en';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLanguage();
+  }
+
+  Future<void> _loadLanguage() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _lang = prefs.getString('language') ?? 'en';
+    });
+  }
+
+  Future<void> _changeLanguage(String lang) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('language', lang);
+    setState(() => _lang = lang);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final isRTL = _lang == 'fa';
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Ultimate Calculator',
+      locale: Locale(_lang),
+      supportedLocales: const [Locale('en'), Locale('fa')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      builder: (context, child) => Directionality(
+        textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
+        child: child!,
+      ),
       theme: ThemeData(
         brightness: Brightness.dark,
         scaffoldBackgroundColor: const Color(0xFF0A0E21),
@@ -28,13 +128,23 @@ class UltimateCalculatorApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const HomeScreen(),
+      home: HomeScreen(
+        lang: _lang,
+        onLanguageChanged: _changeLanguage,
+      ),
     );
   }
 }
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final String lang;
+  final Function(String) onLanguageChanged;
+
+  const HomeScreen({
+    super.key,
+    required this.lang,
+    required this.onLanguageChanged,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -43,6 +153,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   List<String> _history = [];
+
+  String t(String key) => AppStrings.get(key, widget.lang);
 
   @override
   void initState() {
@@ -71,6 +183,10 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _history.clear());
   }
 
+  void _haptic() {
+    HapticFeedback.lightImpact();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -85,6 +201,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
+          // Background Animation 1
           Positioned(
             top: -100, right: -100,
             child: Container(
@@ -100,6 +217,7 @@ class _HomeScreenState extends State<HomeScreen> {
              .then()
              .move(begin: const Offset(20, 30), end: const Offset(0, 0), duration: 4.seconds),
           ),
+          // Background Animation 2
           Positioned(
             bottom: -100, left: -100,
             child: Container(
@@ -123,11 +241,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: IndexedStack(
                     index: _currentIndex,
                     children: [
-                      BasicCalculator(onResult: _saveToHistory),
-                      ScientificCalculator(onResult: _saveToHistory),
-                      ProgrammerCalculator(onResult: _saveToHistory),
-                      const GraphingCalculator(),
-                      const UnitConverter(),
+                      BasicCalculator(onResult: _saveToHistory, lang: widget.lang, onHaptic: _haptic),
+                      ScientificCalculator(onResult: _saveToHistory, lang: widget.lang, onHaptic: _haptic),
+                      ProgrammerCalculator(lang: widget.lang, onHaptic: _haptic),
+                      GraphingCalculator(lang: widget.lang),
+                      UnitConverter(lang: widget.lang, onHaptic: _haptic),
+                      DateCalculator(lang: widget.lang, onHaptic: _haptic),
                     ],
                   ),
                 ),
@@ -141,40 +260,51 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildAppBar() {
+    final isRTL = widget.lang == 'fa';
+    final titleFont = isRTL ? GoogleFonts.vazirmatn : GoogleFonts.orbitron;
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Row(
         children: [
-          Text(
-            'ULTIMATE CALC',
-            style: GoogleFonts.orbitron(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              shadows: [Shadow(color: const Color(0xFF00D9FF), blurRadius: 15)],
-            ),
-          ).animate().fadeIn(duration: 500.ms).slideX(begin: -0.2, end: 0),
-          const Spacer(),
+          Expanded(
+            child: Text(
+              t('appTitle'),
+              style: titleFont(
+                fontSize: isRTL ? 20 : 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                shadows: [Shadow(color: const Color(0xFF00D9FF), blurRadius: 15)],
+              ),
+              overflow: TextOverflow.ellipsis,
+            ).animate().fadeIn(duration: 500.ms).slideX(begin: isRTL ? 0.2 : -0.2, end: 0),
+          ),
+          IconButton(
+            icon: const Icon(Icons.language, color: Colors.white),
+            onPressed: _showLanguageSheet,
+          ).animate().fadeIn(delay: 200.ms),
           IconButton(
             icon: const Icon(Icons.history_rounded, color: Colors.white),
             onPressed: _showHistorySheet,
-          ).animate().fadeIn(delay: 200.ms).scale(begin: const Offset(0.5, 0.5)),
+          ).animate().fadeIn(delay: 300.ms),
         ],
       ),
     );
   }
 
   Widget _buildBottomNav() {
+    final isRTL = widget.lang == 'fa';
+    final bodyFont = isRTL ? GoogleFonts.vazirmatn : GoogleFonts.robotoMono;
     final items = [
-      {'icon': Icons.calculate, 'label': 'Basic'},
-      {'icon': Icons.science, 'label': 'Scientific'},
-      {'icon': Icons.code, 'label': 'Programmer'},
-      {'icon': Icons.show_chart, 'label': 'Graph'},
-      {'icon': Icons.swap_horiz, 'label': 'Convert'},
+      {'icon': Icons.calculate, 'label': t('basic')},
+      {'icon': Icons.science, 'label': t('scientific')},
+      {'icon': Icons.code, 'label': t('programmer')},
+      {'icon': Icons.show_chart, 'label': t('graph')},
+      {'icon': Icons.swap_horiz, 'label': t('convert')},
+      {'icon': Icons.calendar_today, 'label': t('date')},
     ];
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+      margin: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.05),
         borderRadius: BorderRadius.circular(30),
@@ -185,26 +315,38 @@ class _HomeScreenState extends State<HomeScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: List.generate(items.length, (i) {
           final active = _currentIndex == i;
-          return GestureDetector(
-            onTap: () => setState(() => _currentIndex = i),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: active ? const Color(0xFF00D9FF) : Colors.transparent,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: active ? [BoxShadow(color: const Color(0xFF00D9FF).withOpacity(0.5), blurRadius: 15)] : null,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(items[i]['icon'] as IconData, color: active ? Colors.black : Colors.white70, size: 18),
-                  const SizedBox(height: 2),
-                  Text(
-                    items[i]['label'] as String,
-                    style: TextStyle(color: active ? Colors.black : Colors.white70, fontSize: 9, fontWeight: active ? FontWeight.bold : FontWeight.normal),
-                  ),
-                ],
+          return Expanded(
+            child: GestureDetector(
+              onTap: () {
+                _haptic();
+                setState(() => _currentIndex = i);
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                decoration: BoxDecoration(
+                  color: active ? const Color(0xFF00D9FF) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: active ? [BoxShadow(color: const Color(0xFF00D9FF).withOpacity(0.5), blurRadius: 15)] : null,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(items[i]['icon'] as IconData, color: active ? Colors.black : Colors.white70, size: 18),
+                    const SizedBox(height: 2),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        items[i]['label'] as String,
+                        style: bodyFont(
+                          color: active ? Colors.black : Colors.white70,
+                          fontSize: 8,
+                          fontWeight: active ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           );
@@ -213,7 +355,64 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _showLanguageSheet() {
+    final titleFont = widget.lang == 'fa' ? GoogleFonts.vazirmatn : GoogleFonts.orbitron;
+    final bodyFont = widget.lang == 'fa' ? GoogleFonts.vazirmatn : GoogleFonts.robotoMono;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A2E),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+          border: Border.all(color: const Color(0xFF00D9FF).withOpacity(0.3)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(t('language'), style: titleFont(fontSize: 20, color: Colors.white)),
+            const SizedBox(height: 20),
+            _langButton('English', 'en', Icons.language, bodyFont),
+            const SizedBox(height: 10),
+            _langButton('فارسی', 'fa', Icons.translate, bodyFont),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _langButton(String label, String lang, IconData icon, TextStyle Function({Color? color}) font) {
+    final isSelected = widget.lang == lang;
+    return InkWell(
+      onTap: () {
+        widget.onLanguageChanged(lang);
+        Navigator.pop(context);
+      },
+      borderRadius: BorderRadius.circular(15),
+      child: Container(
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF00D9FF).withOpacity(0.2) : Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: isSelected ? const Color(0xFF00D9FF) : Colors.white.withOpacity(0.1)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: isSelected ? const Color(0xFF00D9FF) : Colors.white70),
+            const SizedBox(width: 15),
+            Text(label, style: font(color: Colors.white).copyWith(fontSize: 16)),
+            const Spacer(),
+            if (isSelected) const Icon(Icons.check_circle, color: Color(0xFF00D9FF)),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showHistorySheet() {
+    final bodyFont = widget.lang == 'fa' ? GoogleFonts.vazirmatn : GoogleFonts.robotoMono;
+    final titleFont = widget.lang == 'fa' ? GoogleFonts.vazirmatn : GoogleFonts.orbitron;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -229,12 +428,12 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Row(
               children: [
-                Text('History', style: GoogleFonts.orbitron(fontSize: 18, color: Colors.white)),
+                Text(t('history'), style: titleFont(fontSize: 18, color: Colors.white)),
                 const Spacer(),
                 if (_history.isNotEmpty)
                   TextButton(
                     onPressed: () { _clearHistory(); Navigator.pop(context); },
-                    child: const Text('Clear All', style: TextStyle(color: Colors.redAccent)),
+                    child: Text(t('clearAll'), style: const TextStyle(color: Colors.redAccent)),
                   ),
               ],
             ),
@@ -242,7 +441,7 @@ class _HomeScreenState extends State<HomeScreen> {
             SizedBox(
               height: 400,
               child: _history.isEmpty
-                ? const Center(child: Text('No history yet', style: TextStyle(color: Colors.white54)))
+                ? Center(child: Text(t('noHistory'), style: const TextStyle(color: Colors.white54)))
                 : ListView.builder(
                     itemCount: _history.length,
                     itemBuilder: (context, index) => Container(
@@ -255,12 +454,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       child: Row(
                         children: [
-                          Expanded(child: Text(_history[index], style: GoogleFonts.robotoMono(color: Colors.white))),
+                          Expanded(child: Text(_history[index], style: bodyFont(color: Colors.white))),
                           IconButton(
                             icon: const Icon(Icons.copy, size: 18, color: Color(0xFF00D9FF)),
                             onPressed: () {
                               Clipboard.setData(ClipboardData(text: _history[index]));
-                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Copied!')));
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t('copied'))));
                             },
                           ),
                         ],
@@ -278,7 +477,9 @@ class _HomeScreenState extends State<HomeScreen> {
 // ============ BASIC CALCULATOR ============
 class BasicCalculator extends StatefulWidget {
   final Function(String) onResult;
-  const BasicCalculator({super.key, required this.onResult});
+  final String lang;
+  final VoidCallback onHaptic;
+  const BasicCalculator({super.key, required this.onResult, required this.lang, required this.onHaptic});
 
   @override
   State<BasicCalculator> createState() => _BasicCalculatorState();
@@ -291,6 +492,7 @@ class _BasicCalculatorState extends State<BasicCalculator> {
   final ContextModel _cm = ContextModel();
 
   void _onKeyPressed(String value) {
+    widget.onHaptic();
     setState(() {
       if (value == 'C') {
         _expression = '';
@@ -329,6 +531,9 @@ class _BasicCalculatorState extends State<BasicCalculator> {
 
   @override
   Widget build(BuildContext context) {
+    final isRTL = widget.lang == 'fa';
+    final numFont = isRTL ? GoogleFonts.vazirmatn : GoogleFonts.orbitron;
+    final exprFont = isRTL ? GoogleFonts.vazirmatn : GoogleFonts.robotoMono;
     return Column(
       children: [
         Expanded(
@@ -341,13 +546,13 @@ class _BasicCalculatorState extends State<BasicCalculator> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(_expression.isEmpty ? ' ' : _expression,
-                    textAlign: TextAlign.right,
-                    style: GoogleFonts.robotoMono(fontSize: 32, color: Colors.white70),
+                    textAlign: isRTL ? TextAlign.left : TextAlign.right,
+                    style: exprFont(fontSize: 32, color: Colors.white70),
                   ),
                   const SizedBox(height: 10),
                   Text(_result,
-                    textAlign: TextAlign.right,
-                    style: GoogleFonts.orbitron(fontSize: 52, fontWeight: FontWeight.bold, color: Colors.white,
+                    textAlign: isRTL ? TextAlign.left : TextAlign.right,
+                    style: numFont(fontSize: 52, fontWeight: FontWeight.bold, color: Colors.white,
                       shadows: [Shadow(color: const Color(0xFF00D9FF), blurRadius: 20)]),
                   ).animate().scaleXY(begin: 1, end: 1.05, duration: 100.ms).then().scaleXY(begin: 1.05, end: 1, duration: 100.ms),
                 ],
@@ -399,6 +604,8 @@ class _BasicCalculatorState extends State<BasicCalculator> {
   }
 
   Widget _buildButton(String label, Color color, {int flex = 1}) {
+    final isRTL = widget.lang == 'fa';
+    final font = isRTL ? GoogleFonts.vazirmatn : GoogleFonts.orbitron;
     return Expanded(
       flex: flex,
       child: Padding(
@@ -419,7 +626,7 @@ class _BasicCalculatorState extends State<BasicCalculator> {
               ),
               child: Center(
                 child: Text(label,
-                  style: GoogleFonts.orbitron(fontSize: 24, color: Colors.white, fontWeight: FontWeight.bold,
+                  style: font(fontSize: 24, color: Colors.white, fontWeight: FontWeight.bold,
                     shadows: [Shadow(color: color, blurRadius: 10)]),
                 ),
               ),
@@ -434,7 +641,9 @@ class _BasicCalculatorState extends State<BasicCalculator> {
 // ============ SCIENTIFIC CALCULATOR ============
 class ScientificCalculator extends StatefulWidget {
   final Function(String) onResult;
-  const ScientificCalculator({super.key, required this.onResult});
+  final String lang;
+  final VoidCallback onHaptic;
+  const ScientificCalculator({super.key, required this.onResult, required this.lang, required this.onHaptic});
 
   @override
   State<ScientificCalculator> createState() => _ScientificCalculatorState();
@@ -447,6 +656,7 @@ class _ScientificCalculatorState extends State<ScientificCalculator> {
   final ContextModel _cm = ContextModel();
 
   void _onKeyPressed(String value) {
+    widget.onHaptic();
     setState(() {
       if (value == 'C') {
         _expression = '';
@@ -489,6 +699,9 @@ class _ScientificCalculatorState extends State<ScientificCalculator> {
 
   @override
   Widget build(BuildContext context) {
+    final isRTL = widget.lang == 'fa';
+    final numFont = isRTL ? GoogleFonts.vazirmatn : GoogleFonts.orbitron;
+    final exprFont = isRTL ? GoogleFonts.vazirmatn : GoogleFonts.robotoMono;
     return Column(
       children: [
         Expanded(
@@ -500,12 +713,12 @@ class _ScientificCalculatorState extends State<ScientificCalculator> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(_expression.isEmpty ? ' ' : _expression,
-                  textAlign: TextAlign.right,
-                  style: GoogleFonts.robotoMono(fontSize: 24, color: Colors.white70)),
+                  textAlign: isRTL ? TextAlign.left : TextAlign.right,
+                  style: exprFont(fontSize: 24, color: Colors.white70)),
                 const SizedBox(height: 8),
                 Text(_result,
-                  textAlign: TextAlign.right,
-                  style: GoogleFonts.orbitron(fontSize: 44, fontWeight: FontWeight.bold, color: Colors.white,
+                  textAlign: isRTL ? TextAlign.left : TextAlign.right,
+                  style: numFont(fontSize: 44, fontWeight: FontWeight.bold, color: Colors.white,
                     shadows: [Shadow(color: const Color(0xFFFF00FF), blurRadius: 20)])),
               ],
             ),
@@ -570,6 +783,7 @@ class _ScientificCalculatorState extends State<ScientificCalculator> {
   }
 
   Widget _sBtn(String label, Color color, {int flex = 1}) {
+    final font = GoogleFonts.robotoMono;
     return Expanded(
       flex: flex,
       child: Padding(
@@ -586,7 +800,7 @@ class _ScientificCalculatorState extends State<ScientificCalculator> {
             ),
             child: Center(
               child: Text(label,
-                style: GoogleFonts.orbitron(fontSize: label.length > 2 ? 13 : 18, color: Colors.white, fontWeight: FontWeight.bold,
+                style: font(fontSize: label.length > 2 ? 13 : 18, color: Colors.white, fontWeight: FontWeight.bold,
                   shadows: [Shadow(color: color, blurRadius: 8)])),
             ),
           ),
@@ -598,8 +812,9 @@ class _ScientificCalculatorState extends State<ScientificCalculator> {
 
 // ============ PROGRAMMER CALCULATOR ============
 class ProgrammerCalculator extends StatefulWidget {
-  final Function(String) onResult;
-  const ProgrammerCalculator({super.key, required this.onResult});
+  final String lang;
+  final VoidCallback onHaptic;
+  const ProgrammerCalculator({super.key, required this.lang, required this.onHaptic});
 
   @override
   State<ProgrammerCalculator> createState() => _ProgrammerCalculatorState();
@@ -611,6 +826,7 @@ class _ProgrammerCalculatorState extends State<ProgrammerCalculator> {
   int _base = 10;
 
   void _updateValue(String digit) {
+    widget.onHaptic();
     setState(() {
       _input += digit;
       try {
@@ -621,7 +837,10 @@ class _ProgrammerCalculatorState extends State<ProgrammerCalculator> {
     });
   }
 
-  void _clear() => setState(() { _input = ''; _decimalValue = 0; });
+  void _clear() {
+    widget.onHaptic();
+    setState(() { _input = ''; _decimalValue = 0; });
+  }
 
   String _convert(int value, int base) {
     try {
@@ -665,6 +884,7 @@ class _ProgrammerCalculatorState extends State<ProgrammerCalculator> {
                 ...['A','B','C','D','E','F'].map((h) => _hexBtn(h)),
                 _numBtn('C', Colors.redAccent, () => _clear()),
                 _numBtn('⌫', Colors.orange, () {
+                  widget.onHaptic();
                   setState(() {
                     if (_input.isNotEmpty) {
                       _input = _input.substring(0, _input.length - 1);
@@ -686,6 +906,7 @@ class _ProgrammerCalculatorState extends State<ProgrammerCalculator> {
     final isSelected = _base == base;
     return GestureDetector(
       onTap: () {
+        widget.onHaptic();
         setState(() {
           _base = base;
           _input = _decimalValue.toRadixString(base).toUpperCase();
@@ -768,7 +989,8 @@ class _ProgrammerCalculatorState extends State<ProgrammerCalculator> {
 
 // ============ GRAPHING CALCULATOR ============
 class GraphingCalculator extends StatefulWidget {
-  const GraphingCalculator({super.key});
+  final String lang;
+  const GraphingCalculator({super.key, required this.lang});
 
   @override
   State<GraphingCalculator> createState() => _GraphingCalculatorState();
@@ -778,6 +1000,8 @@ class _GraphingCalculatorState extends State<GraphingCalculator> {
   final TextEditingController _controller = TextEditingController(text: 'sin(x)');
   List<FlSpot> _points = [];
   double _minY = -2, _maxY = 2;
+
+  String t(String key) => AppStrings.get(key, widget.lang);
 
   @override
   void initState() {
@@ -817,6 +1041,8 @@ class _GraphingCalculatorState extends State<GraphingCalculator> {
 
   @override
   Widget build(BuildContext context) {
+    final isRTL = widget.lang == 'fa';
+    final font = isRTL ? GoogleFonts.vazirmatn : GoogleFonts.orbitron;
     return Padding(
       padding: const EdgeInsets.all(15.0),
       child: Column(
@@ -830,7 +1056,7 @@ class _GraphingCalculatorState extends State<GraphingCalculator> {
             ),
             child: Row(
               children: [
-                Text('f(x) = ', style: GoogleFonts.orbitron(color: const Color(0xFFFF00FF), fontWeight: FontWeight.bold)),
+                Text('f(x) = ', style: font(color: const Color(0xFFFF00FF), fontWeight: FontWeight.bold)),
                 Expanded(
                   child: TextField(
                     controller: _controller,
@@ -859,7 +1085,7 @@ class _GraphingCalculatorState extends State<GraphingCalculator> {
               spacing: 8, runSpacing: 8,
               children: ['sin(x)', 'cos(x)', 'tan(x)', 'x^2', 'sqrt(x)', '1/x', 'log(x)'].map((f) {
                 return ActionChip(
-                  label: Text(f, style: TextStyle(color: Colors.white, fontSize: 11)),
+                  label: Text(f, style: const TextStyle(color: Colors.white, fontSize: 11)),
                   backgroundColor: const Color(0xFF9C27B0).withOpacity(0.3),
                   onPressed: () { _controller.text = f; _updateGraph(); },
                 );
@@ -876,7 +1102,7 @@ class _GraphingCalculatorState extends State<GraphingCalculator> {
                 border: Border.all(color: const Color(0xFFFF00FF).withOpacity(0.3)),
               ),
               child: _points.isEmpty
-                ? const Center(child: Text('Enter a function', style: TextStyle(color: Colors.white54)))
+                ? Center(child: Text(t('enterFunction'), style: const TextStyle(color: Colors.white54)))
                 : LineChart(
                     LineChartData(
                       gridData: FlGridData(
@@ -914,7 +1140,9 @@ class _GraphingCalculatorState extends State<GraphingCalculator> {
 
 // ============ UNIT CONVERTER ============
 class UnitConverter extends StatefulWidget {
-  const UnitConverter({super.key});
+  final String lang;
+  final VoidCallback onHaptic;
+  const UnitConverter({super.key, required this.lang, required this.onHaptic});
 
   @override
   State<UnitConverter> createState() => _UnitConverterState();
@@ -925,6 +1153,8 @@ class _UnitConverterState extends State<UnitConverter> {
   String _from = 'Meter';
   String _to = 'Kilometer';
   final TextEditingController _input = TextEditingController(text: '1');
+
+  String t(String key) => AppStrings.get(key, widget.lang);
 
   final Map<String, Map<String, double>> _data = {
     'Length': {
@@ -937,6 +1167,15 @@ class _UnitConverterState extends State<UnitConverter> {
     },
     'Temperature': {'Celsius': 1, 'Fahrenheit': 2, 'Kelvin': 3},
   };
+
+  String _localizeCategory(String cat) {
+    if (widget.lang == 'fa') {
+      if (cat == 'Length') return 'طول';
+      if (cat == 'Weight') return 'وزن';
+      if (cat == 'Temperature') return 'دما';
+    }
+    return cat;
+  }
 
   double _convert() {
     final v = double.tryParse(_input.text) ?? 0;
@@ -956,6 +1195,8 @@ class _UnitConverterState extends State<UnitConverter> {
 
   @override
   Widget build(BuildContext context) {
+    final isRTL = widget.lang == 'fa';
+    final font = isRTL ? GoogleFonts.vazirmatn : GoogleFonts.orbitron;
     return Padding(
       padding: const EdgeInsets.all(15.0),
       child: Column(
@@ -973,19 +1214,22 @@ class _UnitConverterState extends State<UnitConverter> {
               children: ['Length', 'Weight', 'Temperature'].map((c) {
                 final sel = _category == c;
                 return GestureDetector(
-                  onTap: () => setState(() {
-                    _category = c;
-                    _from = _data[c]!.keys.first;
-                    _to = _data[c]!.keys.last;
-                  }),
+                  onTap: () {
+                    widget.onHaptic();
+                    setState(() {
+                      _category = c;
+                      _from = _data[c]!.keys.first;
+                      _to = _data[c]!.keys.last;
+                    });
+                  },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
                       color: sel ? const Color(0xFF00FF88) : Colors.transparent,
                       borderRadius: BorderRadius.circular(15),
                     ),
-                    child: Text(c, style: TextStyle(color: sel ? Colors.black : Colors.white70, fontWeight: FontWeight.bold)),
+                    child: Text(_localizeCategory(c), style: TextStyle(color: sel ? Colors.black : Colors.white70, fontWeight: FontWeight.bold, fontSize: isRTL ? 13 : 14)),
                   ),
                 );
               }).toList(),
@@ -1004,7 +1248,7 @@ class _UnitConverterState extends State<UnitConverter> {
             child: TextField(
               controller: _input,
               keyboardType: TextInputType.number,
-              style: GoogleFonts.orbitron(fontSize: 32, color: Colors.white),
+              style: font(fontSize: 32, color: Colors.white),
               decoration: const InputDecoration(border: InputBorder.none),
               onChanged: (_) => setState(() {}),
             ),
@@ -1025,11 +1269,11 @@ class _UnitConverterState extends State<UnitConverter> {
             ),
             child: Column(
               children: [
-                const Text('RESULT', style: TextStyle(color: Colors.white54, fontSize: 12, letterSpacing: 2)),
+                Text(t('result'), style: const TextStyle(color: Colors.white54, fontSize: 12, letterSpacing: 2)),
                 const SizedBox(height: 10),
                 Text(
                   _convert().toStringAsFixed(6).replaceAll(RegExp(r"([.]*0)(?!.*\d)"), ""),
-                  style: GoogleFonts.orbitron(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.white,
+                  style: font(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.white,
                     shadows: [Shadow(color: const Color(0xFF00FF88), blurRadius: 20)]),
                 ),
                 Text(_to, style: const TextStyle(color: Colors.white70, fontSize: 16)),
@@ -1060,6 +1304,194 @@ class _UnitConverterState extends State<UnitConverter> {
           onChanged: onChanged,
         ),
       ),
+    );
+  }
+}
+
+// ============ DATE CALCULATOR ============
+class DateCalculator extends StatefulWidget {
+  final String lang;
+  final VoidCallback onHaptic;
+  const DateCalculator({super.key, required this.lang, required this.onHaptic});
+
+  @override
+  State<DateCalculator> createState() => _DateCalculatorState();
+}
+
+class _DateCalculatorState extends State<DateCalculator> {
+  DateTime _startDate = DateTime.now();
+  DateTime _endDate = DateTime.now().add(const Duration(days: 30));
+  int _daysDiff = 30;
+
+  String t(String key) => AppStrings.get(key, widget.lang);
+
+  @override
+  void initState() {
+    super.initState();
+    _calculate();
+  }
+
+  void _calculate() {
+    setState(() {
+      _daysDiff = _endDate.difference(_startDate).inDays;
+    });
+  }
+
+  String _toPersianNum(String input) {
+    const english = ['0','1','2','3','4','5','6','7','8','9'];
+    const persian = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+    for (int i = 0; i < english.length; i++) {
+      input = input.replaceAll(english[i], persian[i]);
+    }
+    return input;
+  }
+
+  String _formatDate(DateTime date) {
+    final str = '${date.year}/${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}';
+    return widget.lang == 'fa' ? _toPersianNum(str) : str;
+  }
+
+  Future<void> _pickStart() async {
+    widget.onHaptic();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _startDate,
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null) {
+      setState(() {
+        _startDate = picked;
+        _calculate();
+      });
+    }
+  }
+
+  Future<void> _pickEnd() async {
+    widget.onHaptic();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _endDate,
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null) {
+      setState(() {
+        _endDate = picked;
+        _calculate();
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isRTL = widget.lang == 'fa';
+    final font = isRTL ? GoogleFonts.vazirmatn : GoogleFonts.orbitron;
+    final bodyFont = isRTL ? GoogleFonts.vazirmatn : GoogleFonts.robotoMono;
+    
+    final years = (_daysDiff / 365.25).floor();
+    final months = ((_daysDiff % 365.25) / 30.44).floor();
+    final days = (_daysDiff - (years * 365) - (months * 30)).abs();
+
+    return Padding(
+      padding: const EdgeInsets.all(15.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _dateCard(t('startDate'), _formatDate(_startDate), Icons.calendar_today, const Color(0xFF00D9FF), _pickStart, font),
+          const SizedBox(height: 15),
+          const Icon(Icons.arrow_downward, color: Color(0xFF00FF88), size: 30)
+            .animate(onPlay: (c) => c.repeat()).moveY(begin: -5, end: 5, duration: 1.seconds).then().moveY(begin: 5, end: -5, duration: 1.seconds),
+          const SizedBox(height: 15),
+          _dateCard(t('endDate'), _formatDate(_endDate), Icons.event, const Color(0xFFFF00FF), _pickEnd, font),
+          const SizedBox(height: 30),
+          Container(
+            padding: const EdgeInsets.all(25),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFF00D9FF).withOpacity(0.2),
+                  const Color(0xFFFF00FF).withOpacity(0.2),
+                  const Color(0xFF00FF88).withOpacity(0.2),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(25),
+              border: Border.all(color: const Color(0xFF00FF88).withOpacity(0.5)),
+              boxShadow: [BoxShadow(color: const Color(0xFF00FF88).withOpacity(0.3), blurRadius: 25)],
+            ),
+            child: Column(
+              children: [
+                Text(t('daysDifference'), style: const TextStyle(color: Colors.white54, fontSize: 12, letterSpacing: 2)),
+                const SizedBox(height: 15),
+                Text(
+                  '${widget.lang == 'fa' ? _toPersianNum('$_daysDiff') : '$_daysDiff'} ${t('days')}',
+                  style: font(fontSize: 42, fontWeight: FontWeight.bold, color: Colors.white,
+                    shadows: [Shadow(color: const Color(0xFF00FF88), blurRadius: 20)]),
+                ).animate().scaleXY(begin: 1, end: 1.05, duration: 300.ms).then().scaleXY(begin: 1.05, end: 1, duration: 300.ms),
+                const SizedBox(height: 20),
+                Container(
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(15),
+                    border: Border.all(color: Colors.white.withOpacity(0.1)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _infoBox(widget.lang == 'fa' ? _toPersianNum('$years') : '$years', t('years'), const Color(0xFF00D9FF), font, bodyFont),
+                      _infoBox(widget.lang == 'fa' ? _toPersianNum('$months') : '$months', t('months'), const Color(0xFFFF00FF), font, bodyFont),
+                      _infoBox(widget.lang == 'fa' ? _toPersianNum('$days') : '$days', t('days'), const Color(0xFF00FF88), font, bodyFont),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _dateCard(String label, String date, IconData icon, Color color, VoidCallback onTap, TextStyle Function({int? fontSize, FontWeight? fontWeight, Color? color}) font) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withOpacity(0.5), width: 2),
+          boxShadow: [BoxShadow(color: color.withOpacity(0.3), blurRadius: 15)],
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 30),
+            const SizedBox(width: 15),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                const SizedBox(height: 5),
+                Text(date, style: font(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+              ],
+            ),
+            const Spacer(),
+            Icon(Icons.arrow_forward_ios, color: color, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _infoBox(String value, String label, Color color, TextStyle Function({int? fontSize, FontWeight? fontWeight, Color? color}) font, TextStyle Function({Color? color}) bodyFont) {
+    return Column(
+      children: [
+        Text(value, style: font(fontSize: 24, fontWeight: FontWeight.bold, color: color)),
+        const SizedBox(height: 4),
+        Text(label, style: bodyFont(color: Colors.white70).copyWith(fontSize: 11)),
+      ],
     );
   }
 }
