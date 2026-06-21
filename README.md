@@ -118,7 +118,7 @@ advanced-calculator/
 
 ~~~bash
 # Clone repository
-git clone https://github.com/YOUR-USERNAME/advanced-calculator.git
+git clone https://github.com/par123456/s.git
 cd advanced-calculator
 
 # Install dependencies
@@ -160,7 +160,7 @@ flutter build windows --release
 ساخته شده با ❤️ توسط یک توسعه‌دهنده ایرانی
 
 <p align="center">
-  <img src="https://komarev.com/ghpvc/?username=YOUR-USERNAME&color=00D9FF&style=for-the-badge&label=Views" />
+  <img src="https://komarev.com/ghpvc/?username=par123456&color=00D9FF&style=for-the-badge&label=Views" />
 </p>
 
 ---
