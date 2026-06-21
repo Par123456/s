@@ -1,0 +1,24 @@
+name: advanced_calculator
+description: Ultimate cross-platform calculator.
+publish_to: 'none'
+version: 2.0.0+2
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  math_expressions: ^2.4.0       # برای محاسبات ریاضی
+  flutter_animate: ^4.5.0        # برای انیمیشن‌های خفن
+  google_fonts: ^6.1.0           # برای فونت‌های زیبا
+  shared_preferences: ^2.2.2     # برای ذخیره تاریخچه
+  fl_chart: ^0.66.2              # برای رسم نمودار
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
