@@ -1,7 +1,7 @@
 name: advanced_calculator
-description: Ultimate cross-platform calculator.
+description: Ultimate cross-platform calculator with Persian support.
 publish_to: 'none'
-version: 2.0.0+2
+version: 3.1.0+4
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -9,11 +9,14 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  math_expressions: ^2.4.0       # برای محاسبات ریاضی
-  flutter_animate: ^4.5.0        # برای انیمیشن‌های خفن
-  google_fonts: ^6.1.0           # برای فونت‌های زیبا
-  shared_preferences: ^2.2.2     # برای ذخیره تاریخچه
-  fl_chart: ^0.66.2              # برای رسم نمودار
+  flutter_localizations:
+    sdk: flutter
+  intl: any
+  math_expressions: ^2.4.0
+  flutter_animate: ^4.5.0
+  google_fonts: ^6.1.0
+  shared_preferences: ^2.2.2
+  fl_chart: ^0.66.2
 
 dev_dependencies:
   flutter_test:
