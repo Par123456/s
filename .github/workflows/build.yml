@@ -1,0 +1,140 @@
+name: Build & Release Apps
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (e.g., 2.1.0)'
+        required: true
+        default: '2.0.0'
+      release_notes:
+        description: 'Release Notes'
+        required: false
+        default: 'New release with bug fixes and improvements.'
+
+permissions:
+  contents: write
+
+jobs:
+  build_android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+      
+      - name: Install dependencies
+        run: flutter pub get
+      
+      - name: Build APK
+        run: flutter build apk --release
+      
+      - name: Rename APK
+        run: mv build/app/outputs/flutter-apk/app-release.apk UltimateCalculator-${{ github.run_number }}-android.apk
+      
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: UltimateCalculator-${{ github.run_number }}-android.apk
+
+  build_windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+      
+      - name: Install dependencies
+        run: flutter pub get
+      
+      - name: Build Windows EXE
+        run: flutter build windows --release
+      
+      - name: Create ZIP for Windows
+        run: |
+          Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath UltimateCalculator-${{ github.run_number }}-windows.zip
+      
+      - name: Upload Windows Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-exe
+          path: UltimateCalculator-${{ github.run_number }}-windows.zip
+
+  create_release:
+    needs: [build_android, build_windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download Android APK
+        uses: actions/download-artifact@v4
+        with:
+          name: android-apk
+          path: ./artifacts
+      
+      - name: Download Windows ZIP
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-exe
+          path: ./artifacts
+      
+      - name: Determine Version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "ver=v${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+            echo "notes=${{ github.event.inputs.release_notes }}" >> $GITHUB_OUTPUT
+          else
+            echo "ver=v2.0.${{ github.run_number }}" >> $GITHUB_OUTPUT
+            echo "notes=Auto-generated release from commit ${{ github.sha }}" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.ver }}
+          name: "Ultimate Calculator ${{ steps.version.outputs.ver }}"
+          body: |
+            ## 🚀 Ultimate Calculator - Cross Platform
+            
+            ${{ steps.version.outputs.notes }}
+            
+            ### 📦 Downloads
+            
+            | Platform | File | Description |
+            |----------|------|-------------|
+            | 🤖 Android | `UltimateCalculator-${{ github.run_number }}-android.apk` | For Android phones & tablets |
+            | 🪟 Windows | `UltimateCalculator-${{ github.run_number }}-windows.zip` | For Windows 8.1, 10, 11 |
+            
+            ### 📝 Installation
+            
+            **Android:**
+            1. Download the `.apk` file
+            2. Open it (allow "Unknown sources" if prompted)
+            3. Install and enjoy!
+            
+            **Windows:**
+            1. Download the `.zip` file
+            2. Extract it to any folder
+            3. Run `advanced_calculator.exe`
+            
+            ---
+            Built with ❤️ using Flutter & GitHub Actions
+          files: |
+            artifacts/*.apk
+            artifacts/*.zip
+          draft: false
+          prerelease: false
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
